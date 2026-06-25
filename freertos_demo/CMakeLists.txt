@@ -109,6 +109,7 @@ target_include_directories(freertos_kernel PUBLIC
     ${KERNEL_PORTABLE}
     ${KERNEL_CHIP_EXT}
     ${CMAKE_CURRENT_SOURCE_DIR}/include   # FreeRTOSConfig.h lives here
+    ${RUNTIME_ROOT}/include/stdlib        # stdlib.h, string.h, etc. for bare-metal
 )
 
 # portASM.S uses `#include "portContext.h"` which in turn includes the
@@ -172,9 +173,8 @@ target_link_options(freertos_demo PRIVATE
 # Post-link artifacts (disassembly + Verilog hex).  Derive tool paths from
 # the toolchain's compiler dir so they always exist.
 # -----------------------------------------------------------------------------
-get_filename_component(RV_TOOL_DIR ${CMAKE_C_COMPILER} DIRECTORY)
-set(RV_OBJDUMP "${RV_TOOL_DIR}/riscv64-unknown-elf-objdump")
-set(RV_OBJCOPY "${RV_TOOL_DIR}/riscv64-unknown-elf-objcopy")
+set(RV_OBJDUMP "${CMAKE_OBJDUMP}")
+set(RV_OBJCOPY "${CMAKE_OBJCOPY}")
 
 add_custom_command(TARGET freertos_demo POST_BUILD
     COMMAND ${RV_OBJDUMP} -d "$<TARGET_FILE:freertos_demo>" > "$<TARGET_FILE:freertos_demo>.disasm"

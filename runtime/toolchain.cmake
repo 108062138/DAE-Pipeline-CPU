@@ -16,9 +16,13 @@ set(_RV_PREFIX /opt/riscv/bin/riscv64-unknown-elf)
 set(CMAKE_C_COMPILER   ${_RV_PREFIX}-gcc)
 set(CMAKE_CXX_COMPILER ${_RV_PREFIX}-g++)
 set(CMAKE_ASM_COMPILER ${_RV_PREFIX}-gcc)
-set(CMAKE_AR           ${_RV_PREFIX}-ar)
-set(CMAKE_OBJCOPY      ${_RV_PREFIX}-objcopy)
-set(CMAKE_OBJDUMP      ${_RV_PREFIX}-objdump)
+set(CMAKE_AR           ${_RV_PREFIX}-gcc-ar)
+set(CMAKE_RANLIB       ${_RV_PREFIX}-gcc-ranlib)
+
+# objdump/objcopy: prefer the unknown-elf variants; fall back to riscv64-elf
+# (Homebrew ships a combined binutils package under the riscv64-elf prefix).
+find_program(CMAKE_OBJCOPY NAMES ${_RV_PREFIX}-objcopy riscv64-elf-objcopy REQUIRED)
+find_program(CMAKE_OBJDUMP NAMES ${_RV_PREFIX}-objdump riscv64-elf-objdump REQUIRED)
 
 # RV32I_Zicsr, soft-float, no compressed extension. Zicsr is required for the
 # CSR instructions used by trap handlers (see plans/privileged-arch-plan.md).
