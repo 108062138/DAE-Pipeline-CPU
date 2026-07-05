@@ -41,7 +41,12 @@ SV_FILES=(
   "$ROOT/src/mem_stage.sv"
   "$ROOT/src/wb_stage.sv"
   "$ROOT/src/backend.sv"
+  "$ROOT/src/AXI/AXI_interface.sv"
+  "$ROOT/src/AXI/axi_arbiter.sv"
+  "$ROOT/src/mem_subsys/cache.sv"
+  "$ROOT/src/mem_subsys/mem_subsys.sv"
   "$ROOT/src/Top.sv"
+  "$ROOT/tb/axi_dram_model.sv"
   "$ROOT/tb/tb_top.sv"
   "$ROOT/dpi/snake_soc_dpi.c"
 )

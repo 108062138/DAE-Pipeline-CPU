@@ -16,7 +16,6 @@ module tb_top #(
     import "DPI-C" function int dpi_snake_soc_meip();
 
     localparam int MEM_WORDS = 1 << 16;
-    localparam int INDEX_W = 16;
 
     logic clk;
     logic rst;
@@ -30,7 +29,10 @@ module tb_top #(
     /* verilator lint_off UNUSEDSIGNAL */
     commit_packet_t commit;
     /* verilator lint_on UNUSEDSIGNAL */
-    logic [31:0] dram [MEM_WORDS];
+    mem_req_t imem_req_subsys, dmem_req_subsys;
+    mem_resp_t imem_resp_subsys, dmem_resp_subsys;
+    logic imem_ready_subsys, dmem_ready_subsys;
+    logic rst_n;
     string hex_path;
     string elf_path;
     int max_cycles;
@@ -49,16 +51,59 @@ module tb_top #(
         .clk_i(clk),
         .rst_i(rst),
         .imem_req_o(imem_req),
-        .imem_req_ready_i(1'b1),
-        .imem_resp_i(imem_resp),
+        .imem_req_ready_i(use_dpi ? 1'b1 : imem_ready_subsys),
+        .imem_resp_i(use_dpi ? imem_resp : imem_resp_subsys),
         .dmem_req_o(dmem_req),
-        .dmem_req_ready_i(1'b1),
-        .dmem_resp_i(dmem_resp),
+        .dmem_req_ready_i(use_dpi ? 1'b1 : dmem_ready_subsys),
+        .dmem_resp_i(use_dpi ? dmem_resp : dmem_resp_subsys),
         .msip_i(msip),
         .mtip_i(mtip),
         .meip_i(meip),
         .commit_valid_o(commit_valid),
         .commit_o(commit)
+    );
+
+    assign rst_n = ~rst;
+
+    // In DPI mode the memory subsystem is bypassed (snake_soc owns the
+    // memory map, incl. uncacheable MMIO); keep its request inputs idle.
+    always_comb begin
+        imem_req_subsys = imem_req;
+        imem_req_subsys.req_valid = imem_req.req_valid && !use_dpi;
+        dmem_req_subsys = dmem_req;
+        dmem_req_subsys.req_valid = dmem_req.req_valid && !use_dpi;
+    end
+
+    axi_if #(
+        .ADDR_WIDTH(32),
+        .DATA_WIDTH(32),
+        .ID_WIDTH(4)
+    ) dram_axi (
+        .clk(clk),
+        .rst_n(rst_n)
+    );
+
+    mem_subsys u_mem_subsys (
+        .clk_i(clk),
+        .rst_i(rst),
+        .imem_req_i(imem_req_subsys),
+        .imem_req_ready_o(imem_ready_subsys),
+        .imem_resp_o(imem_resp_subsys),
+        .dmem_req_i(dmem_req_subsys),
+        .dmem_req_ready_o(dmem_ready_subsys),
+        .dmem_resp_o(dmem_resp_subsys),
+        .imem_qos_i(4'd0),
+        .dmem_qos_i(4'd1),
+        .mem_axi(dram_axi)
+    );
+
+    axi_dram_model #(
+        .MEM_WORDS(MEM_WORDS),
+        .BOOT_ROM_ID(0)
+    ) u_dram (
+        .clk_i(clk),
+        .rst_i(rst),
+        .s(dram_axi)
     );
 
     initial begin
@@ -68,10 +113,10 @@ module tb_top #(
 
     initial begin
         for (int i = 0; i < MEM_WORDS; i++) begin
-            dram[i] = 32'd0;
+            u_dram.mem[i] = 32'd0;
         end
         if ($value$plusargs("HEX=%s", hex_path)) begin
-            $readmemh(hex_path, dram);
+            $readmemh(hex_path, u_dram.mem);
         end
         use_dpi = $value$plusargs("ELF=%s", elf_path);
         if (use_dpi && dpi_snake_soc_init(elf_path) != 0) begin
@@ -175,29 +220,11 @@ module tb_top #(
                 dmem_resp.rdata <= dpi_rdata;
                 dmem_resp.error <= dpi_resp != 0;
             end else begin
+                // Non-DPI path: memory is served by mem_subsys + axi_dram_model.
                 msip <= 1'b0;
                 mtip <= 1'b0;
                 meip <= 1'b0;
-
-                imem_resp.resp_valid <= imem_req.req_valid;
-                unique case (imem_req.addr)
-                    32'h0000_0000: imem_resp.rdata <= 32'h8000_00b7;
-                    32'h0000_0004: imem_resp.rdata <= 32'h0000_8067;
-                    default:       imem_resp.rdata <= dram[imem_req.addr[INDEX_W+1:2]];
-                endcase
-                imem_resp.error <= 1'b0;
-
-                dmem_resp.resp_valid <= dmem_req.req_valid;
-                dmem_resp.rdata <= dram[dmem_req.addr[INDEX_W+1:2]];
-                dmem_resp.error <= 1'b0;
             end
-        end
-
-        if (!rst && !use_dpi && dmem_req.req_valid && dmem_req.we) begin
-            if (dmem_req.be[0]) dram[dmem_req.addr[INDEX_W+1:2]][7:0] <= dmem_req.wdata[7:0];
-            if (dmem_req.be[1]) dram[dmem_req.addr[INDEX_W+1:2]][15:8] <= dmem_req.wdata[15:8];
-            if (dmem_req.be[2]) dram[dmem_req.addr[INDEX_W+1:2]][23:16] <= dmem_req.wdata[23:16];
-            if (dmem_req.be[3]) dram[dmem_req.addr[INDEX_W+1:2]][31:24] <= dmem_req.wdata[31:24];
         end
     end
 endmodule

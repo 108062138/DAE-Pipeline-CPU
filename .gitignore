@@ -1,3 +1,5 @@
 obj_dir/
 obj_dir_dae*/
+obj_dir_mem_subsys/
+.DS_Store
 build/
