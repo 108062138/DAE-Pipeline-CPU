@@ -46,8 +46,16 @@ src/
   wb_stage.sv           GPR writeback and commit packet
   scoreboard.sv         in-order issue hazard logic
   fifo.sv               generic FIFO
+  AXI/
+    AXI_interface.sv    axi_if interface (AXI4 burst, master/slave modports)
+    axi_arbiter.sv      N-master round-robin AXI arbiter
+  mem_subsys/
+    cache.sv            direct-mapped L1 (I$ read-only / D$ write-back)
+    mem_subsys.sv       I$ + D$ + arbiter composition
 tb/
-  tb_top.sv             Verilator testbench
+  tb_top.sv             Verilator testbench (DPI path and cache/AXI path)
+  axi_dram_model.sv     behavioral AXI4 DRAM slave (simulation only)
+  tb_mem_subsys.sv      directed unit test for the memory subsystem
 dpi/
   snake_soc_dpi.*       Snake SoC DPI bridge (memory map, ticker, mip wires)
 docs/
@@ -126,7 +134,9 @@ Start with:
    design is more structured than a classic 5-stage pipeline.
 4. [docs/epoch-token-recovery.md](docs/epoch-token-recovery.md): the epoch/token
    idea used by the frontend.
-5. [docs/lab-roadmap.md](docs/lab-roadmap.md): suggested teaching sequence.
+5. [docs/mem-subsys.md](docs/mem-subsys.md): the L1 cache / AXI arbiter / DRAM
+   memory subsystem, block diagram, and its verification story.
+6. [docs/lab-roadmap.md](docs/lab-roadmap.md): suggested teaching sequence.
 
 ## Educational Positioning
 
@@ -149,7 +159,8 @@ ideas that scale better than ad hoc stage control:
 
 - No ROB.
 - No branch predictor beyond always-not-taken.
-- No real cache hierarchy.
+- The L1 cache/AXI path (see [docs/mem-subsys.md](docs/mem-subsys.md)) is only
+  exercised on the `+HEX` testbench path; the DPI/SoC path bypasses it.
 - Scoreboard is still tied to EXE/MEM/WB rows.
 - CSR writes happen from EXE.
 - Stores issue from MEM.
