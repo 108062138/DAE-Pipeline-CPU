@@ -81,7 +81,14 @@ module dae_mem_stage (
             pre_halt = mem_i.halt_observed || mem_i.ir.if_bus_error || mem_i.ir.illegal ||
                        (mem_i.ir.sys_kind == SYS_EBREAK) ||
                        (is_memory && misaligned);
-            async_trap = (async_cause != 32'd0);
+            // CSR writes and MRET commit their side effects in EXE, so by the
+            // time the token reaches MEM the write is already architectural.
+            // Taking an interrupt here would re-execute it after the handler
+            // (and for MRET, clobber the return address: mepc <= the mret's
+            // own PC). Leave the interrupt pending for the next live token.
+            async_trap = (async_cause != 32'd0) &&
+                         (mem_i.ir.fu_type != FU_CSR) &&
+                         (mem_i.ir.sys_kind != SYS_MRET);
             sync_trap = (mem_i.ir.sys_kind == SYS_ECALL);
 
             if (pre_halt) begin
