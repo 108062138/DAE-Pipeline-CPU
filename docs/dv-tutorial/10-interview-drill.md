@@ -66,7 +66,10 @@ stimulus plan including negative space and back-pressure → checkers
 (model or golden data) + protocol assertions → coverage including the
 cross products → known holes.  For a FIFO specifically: fill/drain,
 simultaneous push+pop at empty/full, pointer wrap (`fifo.sv`'s `ptr_next`),
-flush mid-flight, data integrity via a mirror queue in the TB.
+flush mid-flight, data integrity via a mirror queue in the TB — all of which
+is implemented in `tb/tb_fifo.sv` (`./scripts/run-fifo-test.sh`, run at
+DEPTH=4 and the DEPTH=1 corner), so walk through that bench before the
+interview and the answer is simply a description of code you own.
 For an async FIFO add: CDC — gray-coded pointers, two-flop synchronizers,
 and that *simulation can't prove CDC*; you need CDC lint + constrained
 timing.  (This repo is single-clock; say so rather than bluff.)

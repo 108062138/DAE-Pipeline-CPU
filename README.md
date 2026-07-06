@@ -56,6 +56,7 @@ tb/
   tb_top.sv             Verilator testbench (DPI path and cache/AXI path)
   axi_dram_model.sv     behavioral AXI4 DRAM slave (simulation only)
   tb_mem_subsys.sv      directed unit test for the memory subsystem
+  tb_fifo.sv            directed + random unit test for fifo.sv
 dpi/
   snake_soc_dpi.*       Snake SoC DPI bridge (memory map, ticker, mip wires)
 docs/
