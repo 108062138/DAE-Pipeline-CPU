@@ -137,6 +137,9 @@ Start with:
 5. [docs/mem-subsys.md](docs/mem-subsys.md): the L1 cache / AXI arbiter / DRAM
    memory subsystem, block diagram, and its verification story.
 6. [docs/lab-roadmap.md](docs/lab-roadmap.md): suggested teaching sequence.
+7. [docs/dv-tutorial/](docs/dv-tutorial/README.md): a ten-section design
+   verification course taught on this repo's testbenches, with runnable
+   experiments (coverage, bug injection, trace comparison).
 
 ## Educational Positioning
 
